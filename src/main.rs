@@ -6,8 +6,10 @@ use druid::{
     theme, AppLauncher, Color, Data, FontDescriptor, KeyEvent, Lens, MouseEvent, WidgetExt,
     WindowDesc,
 };
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
+
 const CURSOR_BACKGROUND_COLOR: Color = Color::grey8(0x55);
 const HEADER_BACKGROUND: Color = Color::grey8(0xCC);
 const INTERACTIVE_AREA_DIM: f64 = 160.0;
@@ -19,8 +21,7 @@ const PROPERTIES: &[(&str, f64)] = &[("Duration", 140.0), ("Event", 80.0), ("Key
 #[derive(Clone, Data, Lens)]
 struct AppState {
     latencies: Arc<Vec<Latencies>>,
-    key_pressed_time: Option<u128>,
-    mouse_key_pressed_time: Option<u128>,
+    keys_pressed_time: Arc<HashMap<String, u128>>,
 }
 
 struct EventLogger<F: Fn(&Event) -> bool> {
@@ -38,19 +39,24 @@ impl<W: Widget<AppState>, F: Fn(&Event) -> bool> Controller<AppState, W> for Eve
     ) {
         if (self.filter)(event) {
             match event {
-                Event::KeyDown(_) => match data.key_pressed_time {
-                    Some(_) => {}
-                    None => {
-                        data.key_pressed_time = Some(
-                            SystemTime::now()
-                                .duration_since(SystemTime::UNIX_EPOCH)
-                                .unwrap()
-                                .as_nanos(),
-                        );
+                Event::KeyDown(key_event) => {
+                    match data.keys_pressed_time.get(&key_event.key.to_string()) {
+                        Some(_) => {}
+                        None => {
+                            Arc::make_mut(&mut data.keys_pressed_time).insert(
+                                key_event.key.to_string(),
+                                SystemTime::now()
+                                    .duration_since(SystemTime::UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_nanos(),
+                            );
+                        }
                     }
-                },
-                Event::KeyUp(_) => {
-                    if let Some(key_pressed_time) = data.key_pressed_time {
+                }
+                Event::KeyUp(key_event) => {
+                    if let Some(key_pressed_time) =
+                        data.keys_pressed_time.get(&key_event.key.to_string())
+                    {
                         let key_released_time = SystemTime::now()
                             .duration_since(SystemTime::UNIX_EPOCH)
                             .unwrap()
@@ -60,22 +66,32 @@ impl<W: Widget<AppState>, F: Fn(&Event) -> bool> Controller<AppState, W> for Eve
                         if let Some(to_log) = Latencies::try_from_event(event, duration) {
                             Arc::make_mut(&mut data.latencies).insert(0, to_log);
                         }
-                        data.key_pressed_time = None;
+                        Arc::make_mut(&mut data.keys_pressed_time)
+                            .remove(&key_event.key.to_string());
                     }
                 }
-                Event::MouseDown(_) => match data.mouse_key_pressed_time {
-                    Some(_) => {}
-                    None => {
-                        data.mouse_key_pressed_time = Some(
-                            SystemTime::now()
-                                .duration_since(SystemTime::UNIX_EPOCH)
-                                .unwrap()
-                                .as_nanos(),
-                        );
+                Event::MouseDown(mouse_event) => {
+                    match data
+                        .keys_pressed_time
+                        .get(format!("{:?}", &mouse_event.button).as_str())
+                    {
+                        Some(_) => {}
+                        None => {
+                            Arc::make_mut(&mut data.keys_pressed_time).insert(
+                                format!("{:?}", &mouse_event.button),
+                                SystemTime::now()
+                                    .duration_since(SystemTime::UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_nanos(),
+                            );
+                        }
                     }
-                },
-                Event::MouseUp(_) => {
-                    if let Some(mouse_key_pressed_time) = data.mouse_key_pressed_time {
+                }
+                Event::MouseUp(mouse_event) => {
+                    if let Some(mouse_key_pressed_time) = data
+                        .keys_pressed_time
+                        .get(format!("{:?}", &mouse_event.button).as_str())
+                    {
                         let key_released_time = SystemTime::now()
                             .duration_since(SystemTime::UNIX_EPOCH)
                             .unwrap()
@@ -85,7 +101,8 @@ impl<W: Widget<AppState>, F: Fn(&Event) -> bool> Controller<AppState, W> for Eve
                         if let Some(to_log) = Latencies::try_from_event(event, duration) {
                             Arc::make_mut(&mut data.latencies).insert(0, to_log);
                         }
-                        data.mouse_key_pressed_time = None;
+                        Arc::make_mut(&mut data.keys_pressed_time)
+                            .remove(format!("{:?}", &mouse_event.button).as_str());
                     }
                 }
                 _ => (),
@@ -253,8 +270,7 @@ pub fn main() {
         })
         .launch(AppState {
             latencies: Arc::new(Vec::new()),
-            key_pressed_time: None,
-            mouse_key_pressed_time: None,
+            keys_pressed_time: Arc::new(HashMap::new()),
         })
         .expect("Failed to launch application");
 }
