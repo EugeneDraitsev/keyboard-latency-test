@@ -38,7 +38,9 @@ jobs:
 
       - name: Setup GTK for Windows
         if: matrix.os == 'windows-latest'
-        uses: gtk-rs/setup-gtk-on-windows-action@v1
+        run: |
+          choco install gtk-runtime
+          echo "C:\Program Files\GTK3-Runtime Win64\bin" >> $GITHUB_PATH
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
