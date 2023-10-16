@@ -58,7 +58,7 @@ jobs:
       - name: Upload the binary to release
         uses: actions/upload-artifact@v2
         with:
-          name: your_app_name-${{ matrix.target }}
+          name: keyboard-latency-test-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/keyboard-latency-test*
 
   release:
