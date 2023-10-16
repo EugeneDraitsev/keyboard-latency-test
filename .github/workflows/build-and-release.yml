@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install Dependencies on Ubuntu
         if: matrix.os == 'ubuntu-latest'
@@ -59,7 +59,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: your_app_name-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/your_app_name*
+          path: target/${{ matrix.target }}/release/keyboard-latency-test*
 
   release:
     needs: build
