@@ -1,7 +1,6 @@
 name: Build and Release
 
 on:
-  workflow_dispatch:
   push:
     tags:
       - 'v*'
@@ -43,18 +42,8 @@ jobs:
           choco install gtk-runtime
           echo "C:\Program Files\GTK3-Runtime Win64\bin" >> $GITHUB_PATH
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          target: ${{ matrix.target }}
-
       - name: Build the binary
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Upload the binary to release
         uses: actions/upload-artifact@v3
@@ -91,9 +80,15 @@ jobs:
 
       - name: Upload Release Assets
         run: |
-          for file in release-artifacts/*; do
-            if [[ -f "$file" ]]; then
-              gh release upload "${{ github.ref }}" "$file"
+          for directory in *-latency-test-*; do
+            if [[ -d "$directory" ]]; then
+              # We're specifically interested in the main binary and not the .d files
+              for file in "$directory"/keyboard-latency-test*; do
+                if [[ -f "$file" && ! "$file" =~ \.d$ ]]; then
+                  filename=$(basename "$file")
+                  gh release upload "${{ github.ref }}" "$file" "$filename"
+                fi
+              done
             fi
           done
         env:
