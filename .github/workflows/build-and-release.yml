@@ -63,12 +63,9 @@ jobs:
         with:
           path: release-artifacts
 
-      - name: Display structure of downloaded files
-        run: ls -R
-        working-directory: release-artifacts
-
-      - name: Move binary to root
+      - name: Move binary to assets
         run: |
+          mkdir assets
           mv release-artifacts/keyboard-latency-test-x86_64-apple-darwin/keyboard-latency-test assets/keyboard-latency-test-macos
           mv release-artifacts/keyboard-latency-test-x86_64-pc-windows-msvc/keyboard-latency-test.exe assets/keyboard-latency-test.exe
           mv release-artifacts/keyboard-latency-test-x86_64-unknown-linux-gnu/keyboard-latency-test assets/keyboard-latency-test-linux
