@@ -256,7 +256,7 @@ fn make_list_item() -> impl Widget<Latencies> {
 pub fn main() {
     //describe the main window
     let main_window = WindowDesc::new(build_root_widget())
-        .title("Event Viewer")
+        .title("Keyboard and Mouse Latency Test")
         .window_size((760.0, 680.0));
 
     //start the application
