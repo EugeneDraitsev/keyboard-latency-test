@@ -84,12 +84,12 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+      - name: Upload Release Assets
+        run: |
+          for file in release-artifacts/*; do
+            if [[ -f "$file" ]]; then
+              gh release upload "${{ github.ref }}" "$file"
+            fi
+          done
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release-artifacts/keyboard-latency-test-${{ matrix.target }}
-          asset_name: keyboard-latency-test-${{ matrix.target }}
-          asset_content_type: application/octet-stream
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
